@@ -3,8 +3,7 @@ import json
 import redshift
 from file_handler import file_iterator
 
-# db_cursor = redshift.conn.cursor()
-db_cursor = None
+db_cursor = redshift.conn.cursor()
 
 # Loading env variables -> `export $(xargs <.env`
 
