@@ -4,6 +4,7 @@ from utils import batch_iterator, flatten
 
 table_name = os.environ['REDSHIFT_TABLE_NAME']
 
+# Sample flattened hash of DynamoDB table
 TABLE_KEYS = [
   'id', 'partition_key', 'primary_sort_key', 'auth_method',
   'device_properties_client_name', 'device_properties_client_version',
@@ -23,6 +24,7 @@ conn = redshift_connector.connect(
   password = os.environ['REDSHIFT_PASSWORD']
 )
 
+# These below functions could be parallelised
 def batch_insert(db_cursor, data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
