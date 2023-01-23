@@ -12,7 +12,7 @@ yesterday_file_prefix = (current_time - timedelta(days=1)).strftime("%Y/%m/%d")
 checkpoint = s3.read_checkpoint()
 print("Starting from checkpoint: {}".format(checkpoint))
 
-files = s3.list_files(prefix=[yesterday_file_prefix, today_file_prefix], checkpoint=checkpoint)
+files = s3.list_files(prefixes=[yesterday_file_prefix, today_file_prefix], checkpoint=checkpoint)
 
 print("Pending files: {}".format(files))
 
