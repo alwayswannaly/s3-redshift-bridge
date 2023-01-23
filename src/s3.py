@@ -10,16 +10,27 @@ def file_iterator(s3_file_key):
     Key = s3_file_key
   )['Body'].iter_lines()
 
-def list_files(prefix):
+def list_files(prefix, checkpoint):
   files = boto3.resource('s3').Bucket(bucket_name).objects.filter(Prefix = prefix)
-  return [file.key for file in files]
+  files = [file.key for file in files]
+ 
+  if checkpoint is not None:
+      print("called")
+      files = list(filter(lambda file: file > checkpoint, files))
+
+  return sorted(files)
 
 def create_checkpoint(content):
   boto3.resource('s3').Object(bucket_name, checkpoint_file_name).put(Body=content)
 
 def read_checkpoint():
-  return boto3.client('s3').get_object(
-    Bucket = bucket_name,
-    Key = checkpoint_file_name
-  )['Body'].read()
+  try:
+    value = boto3.client('s3').get_object(
+      Bucket = bucket_name,
+      Key = checkpoint_file_name
+    )['Body'].read().decode()
+  except:
+    value = None
+
+  return value
 

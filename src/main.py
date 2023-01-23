@@ -5,27 +5,29 @@ import s3
 from datetime import datetime
 
 file_prefix = datetime.now().strftime("%Y/%m/%d")
-print(s3.list_files(file_prefix))
-
 checkpoint = s3.read_checkpoint()
-
 print(checkpoint)
 
-# # Loading env variables -> `export $(xargs <.env`
+files = s3.list_files(prefix=file_prefix, checkpoint=checkpoint)
 
-# events = {}
+print(files)
 
-#   for record in event['Records']:
-#     s3_file_key = record['s3']['object']['key']
-#     file_content = []
+# Loading env variables -> `export $(xargs <.env)`
 
-#     for line in file_iterator(s3_file_key):
-#       file_content += json.loads(line.decode())
+insert_ops = []
+remove_ops = []
 
-#     insert_ops = list(filter(lambda item: list(item.keys())[0] == 'INSERT', file_content))
-#     redshift.batch_insert(db_cursor, insert_ops)
+for file_key in files:
+  file_content = []
+  for line in s3.file_iterator(file_key):
+    file_content += json.loads(line.decode())
 
-#     delete_ops = list(filter(lambda item: list(item.keys())[0] == 'REMOVE', file_content))
-#     redshift.batch_delete(db_cursor, insert_ops)
+  insert_ops += list(filter(lambda item: list(item.keys())[0] == 'INSERT' and item['INSERT']['keys']['partition_key'].startswith("scaler"), file_content))
+  remove_ops += list(filter(lambda item: list(item.keys())[0] == 'REMOVE' and item['REMOVE']['keys']['partition_key'].startswith("scaler"), file_content))
+  s3.create_checkpoint(file_key)
 
-#     return { 'success': True }
+redshift.batch_insert(insert_ops)
+redshift.batch_remove(remove_ops)
+
+
+

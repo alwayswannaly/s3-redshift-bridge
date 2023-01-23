@@ -41,7 +41,7 @@ def batch_insert(data, batch_size = 500):
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
     db_cursor.execute(query)
 
-def batch_delete(data, batch_size = 500):
+def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
