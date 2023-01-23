@@ -24,8 +24,10 @@ conn = redshift_connector.connect(
   password = os.environ['REDSHIFT_PASSWORD']
 )
 
+db_cursor = conn.cursor()
+
 # These below functions could be parallelised
-def batch_insert(db_cursor, data, batch_size = 500):
+def batch_insert(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
@@ -39,7 +41,7 @@ def batch_insert(db_cursor, data, batch_size = 500):
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
     db_cursor.execute(query)
 
-def batch_delete(db_cursor, data, batch_size = 500):
+def batch_delete(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
