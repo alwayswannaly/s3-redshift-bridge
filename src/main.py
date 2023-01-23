@@ -17,8 +17,6 @@ files = s3.list_files(prefixes=prefixes, checkpoint=checkpoint)
 
 print("Pending files: {}".format(files))
 
-# Loading env variables -> `export $(xargs <.env)`
-
 for file_key in files:
   file_content = []
   for line in s3.file_iterator(file_key):
