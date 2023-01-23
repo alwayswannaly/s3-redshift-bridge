@@ -30,7 +30,7 @@ conn.autocommit = True
 db_cursor = conn.cursor()
 
 #db_cursor.execute("drop table {};".format(table_name))
-#db_cursor.execute("CREATE TABLE scaler_ebdb_dynamo_user_sessions (partition_key character varying, primary_sort_key character varying, auth_method character varying, device_properties_client_name character varying, device_properties_client_version character varying, device_properties_device_type character varying, device_properties_os_name character varying, device_properties_os_version character varying, location_city character varying, location_country character varying, location_country_code character varying, location_ip character varying, location_postal_code character varying, location_region character varying, location_region_code character varying, product character varying, remote_ip character varying, session_state character varying, user_agent text, created_at character varying, session_expiry_time character varying, updated_at character varying) compound sortkey (partition_key, primary_sort_key);")
+#db_cursor.execute("CREATE TABLE scaler_ebdb_dynamo_user_sessions (partition_key varchar(150), primary_sort_key varchar(300), auth_method varchar(50), device_properties_client_name character varying, device_properties_client_version character varying, device_properties_device_type character varying, device_properties_os_name character varying, device_properties_os_version character varying, location_city varchar(100), location_country varchar(100), location_country_code varchar(10), location_ip varchar(50), location_postal_code varchar(100), location_region varchar(100), location_region_code varchar(100), product varchar(30), remote_ip varchar(50), session_state varchar(20), user_agent varchar(500), created_at varchar(50), session_expiry_time varchar(50), updated_at varchar(50)) compound sortkey (partition_key, primary_sort_key);")
 
 # These below functions could be parallalised
 def batch_insert(data, batch_size = 500):
@@ -45,6 +45,7 @@ def batch_insert(data, batch_size = 500):
 
       values.append("(" + ",".join(res) + ")")
 
+    print(values)
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
     db_cursor.execute(query)
 
@@ -52,7 +53,8 @@ def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
-      value = flatten(row['REMOVE']['data'])
+      print(row)
+      value = flatten(row['REMOVE']['keys'])
       values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
         value['primary_sort_key'],
         value['partition_key']
