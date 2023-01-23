@@ -33,6 +33,3 @@ for file_key in files:
 
 redshift.batch_insert(insert_ops)
 redshift.batch_remove(remove_ops)
-
-
-
