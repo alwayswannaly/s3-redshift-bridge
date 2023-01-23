@@ -24,9 +24,15 @@ conn = redshift_connector.connect(
   password = os.environ['REDSHIFT_PASSWORD']
 )
 
+conn.rollback()
+conn.autocommit = True
+
 db_cursor = conn.cursor()
 
-# These below functions could be parallelised
+#db_cursor.execute("drop table {};".format(table_name))
+#db_cursor.execute("CREATE TABLE scaler_ebdb_dynamo_user_sessions (partition_key character varying, primary_sort_key character varying, auth_method character varying, device_properties_client_name character varying, device_properties_client_version character varying, device_properties_device_type character varying, device_properties_os_name character varying, device_properties_os_version character varying, location_city character varying, location_country character varying, location_country_code character varying, location_ip character varying, location_postal_code character varying, location_region character varying, location_region_code character varying, product character varying, remote_ip character varying, session_state character varying, user_agent text, created_at character varying, session_expiry_time character varying, updated_at character varying) compound sortkey (partition_key, primary_sort_key);")
+
+# These below functions could be parallalised
 def batch_insert(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
@@ -34,24 +40,20 @@ def batch_insert(data, batch_size = 500):
       value = flatten(row['INSERT']['data'])
       res = []
       for key in TABLE_KEYS:
-        res.append(value[key] if value.get(key) else "default")
+        row_value = "\'" + value[key] + "\'" if value[key] else "null"
+        res.append(row_value)
 
       values.append("(" + ",".join(res) + ")")
 
-    print(values)
-    query = "INSERT INTO {} VALUES {};".format(table_name, "(" + ",".join(["%s"] * len(TABLE_KEYS)) + ")")
-    print(query)
-    db_cursor.executemany(query, values)
+    query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
+    db_cursor.execute(query)
 
 def batch_remove(data, batch_size = 500):
-  print(data)
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
-      print(row)
       value = flatten(row['REMOVE']['data'])
-      print(value)
-      values.append("(primary_sort_key=\"{}\" AND partition_key=\"{}\")".format(
+      values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
         value['primary_sort_key'],
         value['partition_key']
       ))

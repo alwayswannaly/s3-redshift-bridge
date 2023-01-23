@@ -12,11 +12,6 @@ files = s3.list_files(prefix=file_prefix, checkpoint=checkpoint)
 
 print(files)
 
-a = redshift.db_cursor.execute("CREATE TABLE scaler_ebdb_dynamo_user_sessions (partition_key character varying, primary_sort_key character varying, auth_method character varying, device_properties_client_name character varying, device_properties_client_version character varying, device_properties_device_type character varying, device_properties_os_name character varying, device_properties_os_version character varying, location_city character varying, location_country character varying, location_country_code character varying, location_ip character varying, location_postal_code character varying, location_region character varying, location_region_code character varying, product character varying, remote_ip character varying, session_state character varying, user_agent character varying, created_at character varying, session_expiry_time character varying, updated_at character varying) compound sortkey (partition_key, primary_sort_key);")
-
-print(a)
-print("hello")
-
 # Loading env variables -> `export $(xargs <.env)`
 
 insert_ops = []
