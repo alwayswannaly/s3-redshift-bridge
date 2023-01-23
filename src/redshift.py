@@ -6,7 +6,7 @@ table_name = os.environ['REDSHIFT_TABLE_NAME']
 
 # Sample flattened hash of DynamoDB table
 TABLE_KEYS = [
-  'id', 'partition_key', 'primary_sort_key', 'auth_method',
+  'partition_key', 'primary_sort_key', 'auth_method',
   'device_properties_client_name', 'device_properties_client_version',
   'device_properties_device_type', 'device_properties_os_name',
   'device_properties_os_version', 'location_city', 'location_country',
@@ -38,18 +38,24 @@ def batch_insert(data, batch_size = 500):
 
       values.append("(" + ",".join(res) + ")")
 
+    print(values)
     query = "INSERT INTO {} VALUES {};".format(table_name, "(" + ",".join(["%s"] * len(TABLE_KEYS)) + ")")
+    print(query)
     db_cursor.executemany(query, values)
 
 def batch_remove(data, batch_size = 500):
+  print(data)
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
-      value = flatten(row['INSERT']['data'])
+      print(row)
+      value = flatten(row['REMOVE']['data'])
+      print(value)
       values.append("(primary_sort_key=\"{}\" AND partition_key=\"{}\")".format(
         value['primary_sort_key'],
         value['partition_key']
       ))
 
     query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
+    print(query)
     db_cursor.execute(query)
