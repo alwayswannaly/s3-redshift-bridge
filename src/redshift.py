@@ -6,7 +6,7 @@ table_name = os.environ['REDSHIFT_TABLE_NAME']
 
 # Sample flattened hash of DynamoDB table
 TABLE_KEYS = [
-  'id', 'partition_key', 'primary_sort_key', 'auth_method',
+  'partition_key', 'primary_sort_key', 'auth_method',
   'device_properties_client_name', 'device_properties_client_version',
   'device_properties_device_type', 'device_properties_os_name',
   'device_properties_os_version', 'location_city', 'location_country',
@@ -24,27 +24,33 @@ conn = redshift_connector.connect(
   password = os.environ['REDSHIFT_PASSWORD']
 )
 
-# These below functions could be parallelised
-def batch_insert(db_cursor, data, batch_size = 500):
+conn.rollback()
+conn.autocommit = True
+
+db_cursor = conn.cursor()
+
+# These below functions could be parallalised
+def batch_insert(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
       value = flatten(row['INSERT']['data'])
       res = []
       for key in TABLE_KEYS:
-        res.append(value[key] if value.get(key) else "default")
+        row_value = "\'" + value[key] + "\'" if value[key] else "null"
+        res.append(row_value)
 
       values.append("(" + ",".join(res) + ")")
 
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
     db_cursor.execute(query)
 
-def batch_delete(db_cursor, data, batch_size = 500):
+def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
-      value = flatten(row['INSERT']['data'])
-      values.append("(primary_sort_key=\"{}\" AND partition_key=\"{}\")".format(
+      value = flatten(row['REMOVE']['keys'])
+      values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
         value['primary_sort_key'],
         value['partition_key']
       ))
