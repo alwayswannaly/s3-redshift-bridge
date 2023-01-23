@@ -3,15 +3,18 @@ import json
 import redshift
 import s3
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
 
-file_prefix = datetime.now().strftime("%Y/%m/%d")
+current_time = datetime.now()
+today_file_prefix = current_time.strftime("%Y/%m/%d")
+yesterday_file_prefix = (current_time - timedelta(days=1)).strftime("%Y/%m/%d")
+
 checkpoint = s3.read_checkpoint()
-print(checkpoint)
+print("Starting from checkpoint: {}".format(checkpoint))
 
-files = s3.list_files(prefix=file_prefix, checkpoint=checkpoint)
+files = s3.list_files(prefix=[yesterday_file_prefix, today_file_prefix], checkpoint=checkpoint)
 
-print(files)
+print("Pending files: {}".format(files))
 
 # Loading env variables -> `export $(xargs <.env)`
 
@@ -27,3 +30,4 @@ for file_key in files:
   redshift.batch_remove(remove_ops)
 
   s3.create_checkpoint(file_key)
+  print("Successfully finished {}".format(file_key))
