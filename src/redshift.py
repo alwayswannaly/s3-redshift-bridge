@@ -49,7 +49,6 @@ def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     values = []
     for row in batched_data:
-      print(row)
       value = flatten(row['REMOVE']['keys'])
       values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
         value['primary_sort_key'],

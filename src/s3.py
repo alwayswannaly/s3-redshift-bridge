@@ -14,7 +14,8 @@ def list_files(prefixes, checkpoint):
   files = []
   for prefix in prefixes:
     files += boto3.resource('s3').Bucket(bucket_name).objects.filter(Prefix = prefix)
-    files += [file.key for file in files]
+    
+  files = [file.key for file in files]
  
   if checkpoint is not None:
     files = list(filter(lambda file: file > checkpoint, files))
