@@ -37,8 +37,11 @@ def batch_insert(data, batch_size = 500):
       value = flatten(row['INSERT']['data'])
       res = []
       for key in TABLE_KEYS:
-        row_value = "\'" + value[key] + "\'" if value[key] else "null"
-        res.append(row_value)
+        if value[key] is None:
+          escaped_value = "null"
+        else:
+          escaped_value = "\'" + value[key].replace("'", "''") + "\'"
+        res.append(escaped_value)
 
       values.append("(" + ",".join(res) + ")")
 
