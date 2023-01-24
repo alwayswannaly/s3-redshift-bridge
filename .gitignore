@@ -1,3 +1,4 @@
 .env
 src/__pycache__
 src/redshift.pyc
+ecosystem.config.js
