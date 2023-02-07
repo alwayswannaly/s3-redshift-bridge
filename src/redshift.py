@@ -35,11 +35,11 @@ db_cursor = conn.cursor()
 # These below functions could be parallalised
 def batch_insert(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
-    futures.wait([executor.submit(_insert, item) for item in data])
+    futures.wait([executor.submit(_insert, item) for item in batched_data])
 
 def _insert(data):
   values = []
-  for row in batched_data:
+  for row in data:
     value = flatten(row['INSERT']['data'])
     res = []
     for key in TABLE_KEYS:
@@ -56,11 +56,11 @@ def _insert(data):
 
 def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
-    futures.wait([executor.submit(_insert, item) for item in data])
+    futures.wait([executor.submit(_remove, item) for item in batched_data])
 
 def _remove(data):
   values = []
-  for row in batched_data:
+  for row in data:
     value = flatten(row['REMOVE']['keys'])
     values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
       value['primary_sort_key'],
