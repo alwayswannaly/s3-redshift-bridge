@@ -18,7 +18,7 @@ TABLE_KEYS = [
   'updated_at'
 ]
 
-executor = futures.ProcessPoolExecutor(1)
+executor = futures.ProcessPoolExecutor(100)
 
 conn = redshift_connector.connect(
   host = os.environ['REDSHIFT_HOST'],
