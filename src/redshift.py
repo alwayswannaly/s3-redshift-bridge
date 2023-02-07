@@ -17,7 +17,7 @@ TABLE_KEYS = [
   'updated_at'
 ]
 
-executor = futures.ProcessPoolExecutor(100)
+executor = futures.ProcessPoolExecutor(1)
 
 conn = redshift_connector.connect(
   host = os.environ['REDSHIFT_HOST'],
@@ -38,34 +38,40 @@ def batch_insert(data, batch_size = 500):
     futures.wait([executor.submit(_insert, item) for item in batched_data])
 
 def _insert(data):
-  values = []
-  for row in data:
-    value = flatten(row['INSERT']['data'])
-    res = []
-    for key in TABLE_KEYS:
-      if value[key] is None:
-        escaped_value = "null"
-      else:
-        escaped_value = "\'" + value[key].replace("'", "''") + "\'"
-      res.append(escaped_value)
+  try
+    values = []
+    for row in data:
+      value = flatten(row['INSERT']['data'])
+      res = []
+      for key in TABLE_KEYS:
+        if value[key] is None:
+          escaped_value = "null"
+        else:
+          escaped_value = "\'" + value[key].replace("'", "''") + "\'"
+        res.append(escaped_value)
 
-    values.append("(" + ",".join(res) + ")")
+      values.append("(" + ",".join(res) + ")")
 
-  query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
-  db_cursor.execute(query)
+    query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
+    db_cursor.execute(query)
+  except Exception as e:
+    print(e)
 
 def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
     futures.wait([executor.submit(_remove, item) for item in batched_data])
 
 def _remove(data):
-  values = []
-  for row in data:
-    value = flatten(row['REMOVE']['keys'])
-    values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
-      value['primary_sort_key'],
-      value['partition_key']
-    ))
+  try:
+    values = []
+    for row in data:
+      value = flatten(row['REMOVE']['keys'])
+      values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
+        value['primary_sort_key'],
+        value['partition_key']
+      ))
 
-  query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
-  db_cursor.execute(query)
+    query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
+    db_cursor.execute(query)
+  except Exception as e:
+    print(e)
