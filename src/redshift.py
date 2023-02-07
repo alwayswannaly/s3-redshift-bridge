@@ -2,6 +2,7 @@ import os
 import redshift_connector
 from utils import batch_iterator, flatten
 from concurrent import futures
+import traceback
 
 table_name = os.environ['REDSHIFT_TABLE_NAME']
 
@@ -55,8 +56,8 @@ def _insert(data):
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
     db_cursor.execute(query)
     print("Inserted {} items".format(len(data)))
-  except Exception as e:
-    print(e)
+  except Exception:
+    print(traceback.format_exc())
 
 def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
@@ -75,5 +76,5 @@ def _remove(data):
     query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
     db_cursor.execute(query)
     print("Deleted {} items".format(len(data)))
-  except Exception as e:
-    print(e)
+  except Exception:
+    print(traceback.format_exc())
