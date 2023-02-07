@@ -18,7 +18,7 @@ TABLE_KEYS = [
   'updated_at'
 ]
 
-executor = futures.ProcessPoolExecutor(5)
+executor = futures.ProcessPoolExecutor(10)
 
 conn = redshift_connector.connect(
   host = os.environ['REDSHIFT_HOST'],
@@ -30,8 +30,6 @@ conn = redshift_connector.connect(
 
 conn.rollback()
 conn.autocommit = True
-
-db_cursor = conn.cursor()
 
 # These below functions could be parallalised
 def batch_insert(data, batch_size = 500):
@@ -53,7 +51,8 @@ def _insert(data):
       values.append("(" + ",".join(res) + ")")
 
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
-    db_cursor.execute(query)
+
+    conn.cursor().execute(query)
     print("Inserted {} items".format(len(data)))
   except Exception:
     print(traceback.format_exc())
@@ -72,7 +71,7 @@ def _remove(data):
       ))
 
     query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
-    db_cursor.execute(query)
+    conn.cursor().execute(query)
     print("Deleted {} items".format(len(data)))
   except Exception:
     print(traceback.format_exc())
