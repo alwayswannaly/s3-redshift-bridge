@@ -1,6 +1,7 @@
 import os
 import redshift_connector
 from utils import batch_iterator, flatten
+from concurrent import futures
 
 table_name = os.environ['REDSHIFT_TABLE_NAME']
 
@@ -15,6 +16,8 @@ TABLE_KEYS = [
   'session_state', 'user_agent', 'created_at', 'session_expiry_time',
   'updated_at'
 ]
+
+executor = futures.ProcessPoolExecutor(100)
 
 conn = redshift_connector.connect(
   host = os.environ['REDSHIFT_HOST'],
@@ -32,31 +35,37 @@ db_cursor = conn.cursor()
 # These below functions could be parallalised
 def batch_insert(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
-    values = []
-    for row in batched_data:
-      value = flatten(row['INSERT']['data'])
-      res = []
-      for key in TABLE_KEYS:
-        if value[key] is None:
-          escaped_value = "null"
-        else:
-          escaped_value = "\'" + value[key].replace("'", "''") + "\'"
-        res.append(escaped_value)
+    futures.wait([executor.submit(_insert, item) for item in data])
 
-      values.append("(" + ",".join(res) + ")")
+def _insert(data):
+  values = []
+  for row in batched_data:
+    value = flatten(row['INSERT']['data'])
+    res = []
+    for key in TABLE_KEYS:
+      if value[key] is None:
+        escaped_value = "null"
+      else:
+        escaped_value = "\'" + value[key].replace("'", "''") + "\'"
+      res.append(escaped_value)
 
-    query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
-    db_cursor.execute(query)
+    values.append("(" + ",".join(res) + ")")
+
+  query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
+  db_cursor.execute(query)
 
 def batch_remove(data, batch_size = 500):
   for batched_data in batch_iterator(data, batch_size):
-    values = []
-    for row in batched_data:
-      value = flatten(row['REMOVE']['keys'])
-      values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
-        value['primary_sort_key'],
-        value['partition_key']
-      ))
+    futures.wait([executor.submit(_insert, item) for item in data])
 
-    query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
-    db_cursor.execute(query)
+def _remove(data):
+  values = []
+  for row in batched_data:
+    value = flatten(row['REMOVE']['keys'])
+    values.append("(primary_sort_key=\'{}\' AND partition_key=\'{}\')".format(
+      value['primary_sort_key'],
+      value['partition_key']
+    ))
+
+  query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
+  db_cursor.execute(query)
