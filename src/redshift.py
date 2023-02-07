@@ -54,6 +54,7 @@ def _insert(data):
 
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
     db_cursor.execute(query)
+    print("Inserted {} items".format(len(data)))
   except Exception as e:
     print(e)
 
@@ -73,5 +74,6 @@ def _remove(data):
 
     query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
     db_cursor.execute(query)
+    print("Deleted {} items".format(len(data)))
   except Exception as e:
     print(e)
