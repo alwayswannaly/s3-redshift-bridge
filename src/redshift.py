@@ -38,7 +38,7 @@ def batch_insert(data, batch_size = 500):
     futures.wait([executor.submit(_insert, item) for item in batched_data])
 
 def _insert(data):
-  try
+  try:
     values = []
     for row in data:
       value = flatten(row['INSERT']['data'])
