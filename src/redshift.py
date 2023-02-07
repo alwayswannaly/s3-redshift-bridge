@@ -35,8 +35,7 @@ db_cursor = conn.cursor()
 
 # These below functions could be parallalised
 def batch_insert(data, batch_size = 500):
-  for batched_data in batch_iterator(data, batch_size):
-    futures.wait([executor.submit(_insert, item) for item in batched_data])
+  futures.wait([executor.submit(_insert, batched_data) for batched_data in batch_iterator(data, batch_size)])
 
 def _insert(data):
   try:
@@ -60,8 +59,7 @@ def _insert(data):
     print(traceback.format_exc())
 
 def batch_remove(data, batch_size = 500):
-  for batched_data in batch_iterator(data, batch_size):
-    futures.wait([executor.submit(_remove, item) for item in batched_data])
+  futures.wait([executor.submit(_remove, batched_data) for batched_data in batch_iterator(data, batch_size)])
 
 def _remove(data):
   try:
