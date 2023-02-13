@@ -20,19 +20,21 @@ TABLE_KEYS = [
 
 executor = futures.ProcessPoolExecutor(2)
 
-conn = redshift_connector.connect(
-  host = os.environ['REDSHIFT_HOST'],
-  database = os.environ['REDSHIFT_DATABASE'],
-  port = int(os.environ['REDSHIFT_PORT']),
-  user = os.environ['REDSHIFT_USER'],
-  password = os.environ['REDSHIFT_PASSWORD']
-)
+def get_conn():
+  conn = redshift_connector.connect(
+    host = os.environ['REDSHIFT_HOST'],
+    database = os.environ['REDSHIFT_DATABASE'],
+    port = int(os.environ['REDSHIFT_PORT']),
+    user = os.environ['REDSHIFT_USER'],
+    password = os.environ['REDSHIFT_PASSWORD']
+  )
+  conn.rollback()
+  conn.autocommit = True
 
-conn.rollback()
-conn.autocommit = True
+  return conn
 
 # These below functions could be parallalised
-def batch_insert(data, batch_size = 500):
+def batch_insert(data, batch_size = 200):
   futures.wait([executor.submit(_insert, batched_data) for batched_data in batch_iterator(data, batch_size)])
 
 def _insert(data):
@@ -52,12 +54,12 @@ def _insert(data):
 
     query = "INSERT INTO {} VALUES {};".format(table_name, ",".join(values))
 
-    conn.cursor().execute(query)
+    get_conn().cursor().execute(query)
     print("Inserted {} items".format(len(data)))
   except Exception:
     print(traceback.format_exc())
 
-def batch_remove(data, batch_size = 500):
+def batch_remove(data, batch_size = 50):
   futures.wait([executor.submit(_remove, batched_data) for batched_data in batch_iterator(data, batch_size)])
 
 def _remove(data):
@@ -71,7 +73,7 @@ def _remove(data):
       ))
 
     query = "DELETE FROM {} where {}".format(table_name, " OR ".join(values))
-    conn.cursor().execute(query)
+    get_conn().cursor().execute(query)
     print("Deleted {} items".format(len(data)))
   except Exception:
     print(traceback.format_exc())
