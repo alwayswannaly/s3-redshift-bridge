@@ -4,7 +4,11 @@ import redshift
 import s3
 import time
 import sentry
+import slack
 from datetime import datetime, timedelta
+
+inserts = 0
+deletes = 0
 
 def main():
   current_time = datetime.now()
@@ -28,9 +32,22 @@ def main():
     remove_ops = list(filter(lambda item: list(item.keys())[0] == 'REMOVE' and item['REMOVE']['keys']['partition_key'].startswith("scaler"), file_content))
 
     redshift.batch_insert(insert_ops)
+    inserts += len(insert_ops)
     redshift.batch_remove(remove_ops)
+    deletes += len(remove_ops)
 
     s3.create_checkpoint(file_key)
     print("Successfully finished {}".format(file_key))
+
+  print("Sending notifications to slack 🚀")
+  execution_time = str(datetime.now() - current_time)
+  new_checkpoint = s3.read_checkpoint()
+
+  slack.send_webhook_notification({
+    "time_taken": finish_time,
+    "inserted_records": str(inserts),
+    "deleted_records": str(deletes),
+    "checkpoint": new_checkpoint
+  })
 
 main()
